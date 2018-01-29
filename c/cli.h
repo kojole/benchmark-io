@@ -1,7 +1,7 @@
 #pragma once
 
 typedef enum io_type_e {
-  NONE = 128,
+  NONE,
   RAND_READ,
   RAND_WRITE,
   SEQ_READ,

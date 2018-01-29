@@ -38,11 +38,11 @@ config_s cli_parse(int argc, char *argv[]) {
       {"help", no_argument, NULL, 'h'},
       {"bs", required_argument, NULL, 'b'},
       {"count", required_argument, NULL, 'c'},
-      {"rread", no_argument, NULL, RAND_READ},
-      {"rwrite", no_argument, NULL, RAND_WRITE},
-      {"sread", no_argument, NULL, SEQ_READ},
-      {"swrite", no_argument, NULL, SEQ_WRITE},
-      {0, 0, 0, 0},
+      {"rread", no_argument, (int *)&config.io_type, RAND_READ},
+      {"rwrite", no_argument, (int *)&config.io_type, RAND_WRITE},
+      {"sread", no_argument, (int *)&config.io_type, SEQ_READ},
+      {"swrite", no_argument, (int *)&config.io_type, SEQ_WRITE},
+      {NULL, 0, NULL, 0},
   };
 
   char *endptr;
@@ -67,12 +67,6 @@ config_s cli_parse(int argc, char *argv[]) {
         fprintf(stderr, "`-c`, `--count` option require an integer argument\n");
         exit(EXIT_FAILURE);
       }
-      break;
-    case RAND_READ:
-    case RAND_WRITE:
-    case SEQ_READ:
-    case SEQ_WRITE:
-      config.io_type = opt;
       break;
     case '?':
       exit(EXIT_FAILURE);
