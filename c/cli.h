@@ -17,3 +17,4 @@ typedef struct config_s {
 } config_s;
 
 config_s cli_parse(int argc, char *argv[]);
+void cli_hello(const config_s *config);
