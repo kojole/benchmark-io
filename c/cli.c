@@ -4,20 +4,20 @@
 #include <stdlib.h>
 
 static const char *program = "benchmark-io-c";
-static const unsigned long long default_bs = 4096;
-static const unsigned long long default_count = 100000;
+static const size_t default_bs = 4096;
+static const size_t default_count = 100000;
 
 /* clang-format off */
 static const char *help_message =
-"Simple file I/O benchmark.\n"
+"Simple I/O benchmark.\n"
 "\n"
 "Usage:\n"
 "  %s [options] (--rread | --rwrite | --sread | --swrite) <workdir>\n"
 "\n"
 "Options:\n"
 "  -h --help             Show this screen.\n"
-"  -b BYTES, --bs=BYTES  Block size of each I/O [default: %llu].\n"
-"  -c N, --count=N       Total number of I/Os [default: %llu].\n"
+"  -b BYTES, --bs=BYTES  Block size of each I/O [default: %zu].\n"
+"  -c N, --count=N       Total number of I/Os [default: %zu].\n"
 "  --rread               Issue random reads.\n"
 "  --rwrite              Issue random writes.\n"
 "  --sread               Issue sequential reads.\n"
@@ -95,13 +95,13 @@ config_s cli_parse(int argc, char *argv[]) {
 
 /* clang-format off */
 static const char *hello_message =
-"%s; Simple file I/O benchmark.\n"
+"%s; Simple I/O benchmark.\n"
 "\n"
 "Config:\n"
 "  Working directory  %s\n"
 "  I/O type           %s\n"
-"  Block size         %llu\n"
-"  Count              %llu\n"
+"  Block size         %zu\n"
+"  Count              %zu\n"
 "\n"
 "";
 /* clang-format on */
