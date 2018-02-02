@@ -87,7 +87,7 @@ static int setup_target(DIR *dir_p, size_t size) {
 }
 
 static void setup_clear_cache(void) {
-  int ret = system("sudo sysctl -w vm.drop_caches=3");
+  int ret = system("sudo sysctl -w vm.drop_caches=3 > /dev/null");
   if (ret == -1) {
     Error("setup: system(2) failed\n");
   }
