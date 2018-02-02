@@ -1,7 +1,7 @@
 # Environment
 CC := gcc
 CFLAGS := -Wall -O2 -std=c99
-LDLIBS := -lm
+LDLIBS := -lm -lpthread
 
 ifneq ($(shell uname -s),Darwin)
 	LDLIBS += -lrt
