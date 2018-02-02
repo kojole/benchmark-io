@@ -1,10 +1,11 @@
 # Environment
 CC := gcc
 CFLAGS := -Wall -O2 -std=c99
-LDLIBS := -lm -lpthread
+LDLIBS := -lm
 
 ifneq ($(shell uname -s),Darwin)
-	LDLIBS += -lrt
+	CFLAGS += -pthread
+	LDLIBS += -lrt -pthread
 endif
 
 # Project
