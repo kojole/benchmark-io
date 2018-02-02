@@ -1,7 +1,11 @@
 # Environment
 CC := gcc
-CFLAGS := -Wall -O2 -std=c11
-LDLIBS = -lm
+CFLAGS := -Wall -O2 -std=c99
+LDLIBS := -lm
+
+ifneq ($(shell uname -s),Darwin)
+	LDLIBS += -lrt
+endif
 
 # Project
 program := main

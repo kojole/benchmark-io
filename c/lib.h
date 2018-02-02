@@ -2,7 +2,9 @@
 
 #include "cli.h"
 
-#define _DEFAULT_SOURCE
+#define _ATFILE_SOURCE 1
+#define _BSD_SOURCE 1
+#define _DEFAULT_SOURCE 1
 
 #include <dirent.h>
 #include <sys/types.h>
