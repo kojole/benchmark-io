@@ -131,10 +131,10 @@ static const char *hello_message =
 
 void cli_hello(const config_s *config) {
   const char *io_types[] = {
-      "Random read",
-      "Random write",
       "Sequential read",
       "Sequential write",
+      "Random read",
+      "Random write",
   };
   const char *io_type = io_types[config->io_type - RAND_READ];
   printf(hello_message, config->program, config->workdir, io_type, config->bs,

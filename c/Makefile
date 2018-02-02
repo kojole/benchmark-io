@@ -3,7 +3,9 @@ CC := gcc
 CFLAGS := -Wall -O2 -std=c99
 LDLIBS := -lm
 
-ifneq ($(shell uname -s),Darwin)
+ifeq ($(shell uname -s),Darwin)
+	CFLAGS += -DUSE_FSYNC
+else
 	CFLAGS += -pthread
 	LDLIBS += -lrt -pthread
 endif

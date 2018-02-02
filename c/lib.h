@@ -5,6 +5,7 @@
 #define _ATFILE_SOURCE 1
 #define _BSD_SOURCE 1
 #define _DEFAULT_SOURCE 1
+#define _POSIX_C_SOURCE 200809L
 
 #include <dirent.h>
 #include <sys/types.h>
@@ -12,9 +13,7 @@
 
 typedef struct io_log_s {
   struct timespec ts;
-  int type;
-  off_t at;
-  size_t issue_bs;
+  off_t offset;
   ssize_t complete_bs;
 } io_log_s;
 

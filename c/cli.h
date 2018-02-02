@@ -3,11 +3,11 @@
 #include <stddef.h>
 
 typedef enum io_type_e {
+  SEQ_READ = 0b00,
+  SEQ_WRITE = 0b01,
+  RAND_READ = 0b10,
+  RAND_WRITE = 0b11,
   NONE,
-  RAND_READ,
-  RAND_WRITE,
-  SEQ_READ,
-  SEQ_WRITE,
 } io_type_e;
 
 typedef struct config_s {
