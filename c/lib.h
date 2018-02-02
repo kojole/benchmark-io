@@ -19,6 +19,7 @@ typedef struct io_log_s {
 typedef struct bench_s {
   DIR *workdir_p;
   int target_fd;
+  char *buffer;
   size_t logs_n;
   io_log_s *logs;
 } bench_s;

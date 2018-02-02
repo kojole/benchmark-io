@@ -12,33 +12,26 @@ static DIR *setup_workdir(const char *path);
 static int setup_target(DIR *dir_p, size_t size);
 static void setup_clear_cache(void);
 
+static void teardown_dump_logs(DIR *dir_p, size_t logs_n, const io_log_s *logs);
 static void teardown_workdir(DIR *dir_p);
 
 const char *program = NULL;
 
-#define Error_0(format)                                                        \
-  do {                                                                         \
-    printf("\n");                                                              \
-    fprintf(stderr, "%s: " format, program);                                   \
-    exit(EXIT_FAILURE);                                                        \
-  } while (0)
-
 #define Error(format, ...)                                                     \
   do {                                                                         \
     printf("\n");                                                              \
-    fprintf(stderr, "%s: " format, program, __VA_ARGS__);                      \
+    fprintf(stderr, "%s: " format, program, ##__VA_ARGS__);                    \
     exit(EXIT_FAILURE);                                                        \
   } while (0)
 
 bench_s setup(const config_s *config) {
   program = config->program;
-  size_t target_size = config->bs * config->count;
 
   DIR *workdir_p = setup_workdir(config->workdir);
 
   printf("Preparing target file ... ");
   fflush(stdout);
-  int target_fd = setup_target(workdir_p, target_size);
+  int target_fd = setup_target(workdir_p, config->filesize);
   printf("done.\n");
 
   printf("Clearing page cache ... ");
@@ -49,10 +42,11 @@ bench_s setup(const config_s *config) {
   bench_s bench = {
       .workdir_p = workdir_p,
       .target_fd = target_fd,
+      .buffer = malloc(sizeof(char) * config->bs),
       .logs_n = config->count + 1,
       .logs = malloc(sizeof(io_log_s) * (config->count + 1)),
   };
-  if (bench.logs == NULL) {
+  if (bench.buffer == NULL || bench.logs == NULL) {
     Error("setup: malloc(2) failed: %s\n", strerror(errno));
   }
   return bench;
@@ -66,7 +60,7 @@ static DIR *setup_workdir(const char *path) {
   return workdir_p;
 }
 
-static int setup_target(DIR *dir_p, size_t expected_size) {
+static int setup_target(DIR *dir_p, size_t size) {
   int dir_fd = dirfd(dir_p);
   if (dir_fd == -1) {
     Error("setup: dirfd(3) failed: %s\n", strerror(errno));
@@ -82,18 +76,20 @@ static int setup_target(DIR *dir_p, size_t expected_size) {
     Error("setup: lseek(2) failed: %s\n", strerror(errno));
   }
 
-  if (actual_size < expected_size &&
-      ftruncate(target_fd, expected_size) == -1) {
+  if (actual_size < size && ftruncate(target_fd, size) == -1) {
     Error("setup: ftruncate(2) failed: %s\n", strerror(errno));
   }
 
+  if (lseek(target_fd, 0, SEEK_SET) == -1) {
+    Error("setup: lseek(2) failed: %s\n", strerror(errno));
+  }
   return target_fd;
 }
 
 static void setup_clear_cache(void) {
   int ret = system("sudo sysctl -w vm.drop_caches=3");
   if (ret == -1) {
-    Error_0("setup: system(2) failed\n");
+    Error("setup: system(2) failed\n");
   }
   if (WEXITSTATUS(ret) != 0) {
     Error("setup: failed to clean page cache: exit status = %d\n",
@@ -104,10 +100,15 @@ static void setup_clear_cache(void) {
 void run(const config_s *config, const bench_s *bench) {}
 
 void teardown(const config_s *config, const bench_s *bench) {
-  // TODO: write logs
+  teardown_dump_logs(bench->workdir_p, bench->logs_n, bench->logs);
   free(bench->logs);
 
   teardown_workdir(bench->workdir_p);
+}
+
+static void teardown_dump_logs(DIR *dir_p, size_t logs_n,
+                               const io_log_s *logs) {
+  // TODO: dump logs
 }
 
 static void teardown_workdir(DIR *dir_p) {

@@ -16,6 +16,7 @@ typedef struct config_s {
   io_type_e io_type;
   size_t bs;
   size_t count;
+  size_t filesize;
 } config_s;
 
 config_s cli_parse(int argc, char *argv[]);
