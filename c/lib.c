@@ -215,7 +215,7 @@ static void teardown_dump_logs(DIR *dir_p, const char *io_type, size_t bs,
 
   fprintf(log_fp, "timestamp,io_type,offset,issue_bs,complete_bs\n");
   for (size_t i = 0; i < logs_n; i++) {
-    fprintf(log_fp, "%ld.%ld,%s,%lld,%zu,%zu\n", logs[i].ts.tv_sec,
+    fprintf(log_fp, "%ld.%09ld,%s,%lld,%zu,%zu\n", logs[i].ts.tv_sec,
             logs[i].ts.tv_nsec, io_type, (long long)logs[i].offset,
             (i < logs_n - 1) ? bs : 0, logs[i].complete_bs);
   }
