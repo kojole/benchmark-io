@@ -84,7 +84,7 @@ static int setup_target(DIR *dir_p, size_t size) {
     Error("setup: dirfd(3) failed: %s\n", strerror(errno));
   }
 
-  int target_fd = openat(dir_fd, "benchmark-io.bin", O_WRONLY | O_CREAT);
+  int target_fd = openat(dir_fd, "benchmark-io.bin", O_RDWR | O_CREAT, 0644);
   if (target_fd == -1) {
     Error("setup: openat(2) failed: %s\n", strerror(errno));
   }
@@ -195,15 +195,15 @@ static void teardown_dump_logs(DIR *dir_p, const char *io_type, size_t bs,
   }
 
   char log_filename[64];
-  if (strftime(log_filename, sizeof(log_filename), "benchmark-io_%F-%H-%M-%S",
-               tm) == 0) {
+  if (strftime(log_filename, sizeof(log_filename),
+               "benchmark-io_%F-%H-%M-%S.log", tm) == 0) {
     Error("teardown: strftime(3) failed\n");
   }
 
-  printf("Writing log to %s ...", log_filename);
+  printf("Writing log to %s ... ", log_filename);
   fflush(stdout);
 
-  int log_fd = openat(dir_fd, log_filename, O_WRONLY | O_CREAT);
+  int log_fd = openat(dir_fd, log_filename, O_WRONLY | O_CREAT, 0644);
   if (log_fd == -1) {
     Error("teardown: openat(2) failed: %s\n", strerror(errno));
   }
@@ -216,8 +216,8 @@ static void teardown_dump_logs(DIR *dir_p, const char *io_type, size_t bs,
   fprintf(log_fp, "timestamp,io_type,offset,issue_bs,complete_bs\n");
   for (size_t i = 0; i < logs_n; i++) {
     fprintf(log_fp, "%ld.%ld,%s,%lld,%zu,%zu\n", logs[i].ts.tv_sec,
-            logs[i].ts.tv_nsec, io_type, (long long)logs[i].offset, bs,
-            logs[i].complete_bs);
+            logs[i].ts.tv_nsec, io_type, (long long)logs[i].offset,
+            (i < logs_n - 1) ? bs : 0, logs[i].complete_bs);
   }
 
   if (fclose(log_fp) == EOF) {
