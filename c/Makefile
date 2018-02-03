@@ -11,11 +11,12 @@ else
 endif
 
 # Project
-program := main
+program := benchmark-io-c
 sources := $(wildcard *.c)
 objects := $(sources:.c=.o)
 
 $(program): $(objects)
+	$(CC) $(LDFLAGS) $? $(LDLIBS) $(OUTPUT_OPTION)
 
 # Targets
 .DEFAULT_GOAL := all
