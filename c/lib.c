@@ -18,10 +18,13 @@ static void setup_clear_cache(void);
 
 static inline off_t random_offset(size_t bs, size_t count);
 
-static void teardown_dump_logs(DIR *dir_p, const char *io_type, size_t bs,
-                               size_t logs_n, const io_log_s *logs);
+static void teardown_dump_logs(const config_s *config, const bench_s *bench);
 static void teardown_target(int fd);
 static void teardown_workdir(DIR *dir_p);
+
+static inline double ts2f(struct timespec ts) {
+  return ts.tv_sec + ts.tv_nsec * 1e-9;
+}
 
 const char *program = NULL;
 
@@ -164,23 +167,25 @@ static inline off_t random_offset(size_t bs, size_t count) {
 }
 
 void teardown(const config_s *config, const bench_s *bench) {
-  const char *io_types[] = {
-      "SR",
-      "SW",
-      "RR",
-      "RW",
-  };
-  teardown_dump_logs(bench->workdir_p, io_types[config->io_type], config->bs,
-                     bench->logs_n, bench->logs);
+  teardown_dump_logs(config, bench);
   free(bench->logs);
 
   teardown_target(bench->target_fd);
   teardown_workdir(bench->workdir_p);
 }
 
-static void teardown_dump_logs(DIR *dir_p, const char *io_type, size_t bs,
-                               size_t logs_n, const io_log_s *logs) {
-  int dir_fd = dirfd(dir_p);
+/* clang-format off */
+static const char *summary_message =
+"Summary:\n"
+"  Elapsed time  %.3f [s]\n"
+"  Throughput    %.3f [MiB/s]\n"
+"  IOPS          %.3f\n"
+"  Mean latency  %f [ms]\n"
+"";
+/* clang-format on */
+
+static void teardown_dump_logs(const config_s *config, const bench_s *bench) {
+  int dir_fd = dirfd(bench->workdir_p);
   if (dir_fd == -1) {
     Error("teardown: dirfd(3) failed: %s\n", strerror(errno));
   }
@@ -213,18 +218,37 @@ static void teardown_dump_logs(DIR *dir_p, const char *io_type, size_t bs,
     Error("teardown: fdopen(3) failed: %s\n", strerror(errno));
   }
 
+  const char *io_types[] = {
+      "SR",
+      "SW",
+      "RR",
+      "RW",
+  };
+  double sum_latency = 0;
   fprintf(log_fp, "timestamp,io_type,offset,issue_bs,complete_bs\n");
-  for (size_t i = 0; i < logs_n; i++) {
-    fprintf(log_fp, "%ld.%09ld,%s,%lld,%zu,%zu\n", logs[i].ts.tv_sec,
-            logs[i].ts.tv_nsec, io_type, (long long)logs[i].offset,
-            (i < logs_n - 1) ? bs : 0, logs[i].complete_bs);
+  for (size_t i = 0; i < bench->logs_n; i++) {
+    fprintf(log_fp, "%ld.%09ld,%s,%lld,%zu,%zu\n", bench->logs[i].ts.tv_sec,
+            bench->logs[i].ts.tv_nsec, io_types[config->io_type],
+            (long long)bench->logs[i].offset,
+            (i < bench->logs_n - 1) ? config->bs : 0,
+            bench->logs[i].complete_bs);
+    if (i > 0) {
+      sum_latency += ts2f(bench->logs[i].ts) - ts2f(bench->logs[i - 1].ts);
+    }
   }
 
   if (fclose(log_fp) == EOF) {
     Error("teardown: fclose(3) failed: %s\n", strerror(errno));
   }
 
-  printf("done.\n");
+  printf("done.\n\n");
+
+  const double elapsed_time =
+      ts2f(bench->logs[bench->logs_n - 1].ts) - ts2f(bench->logs[0].ts);
+  const double throughput_mib = config->bs * config->count / (double)(1 << 20);
+  const double iops = (double)config->count / elapsed_time;
+  const double mean_latency = sum_latency / config->count;
+  printf(summary_message, elapsed_time, throughput_mib, iops, mean_latency);
 }
 
 static void teardown_target(int fd) {
