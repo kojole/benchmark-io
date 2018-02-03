@@ -1,0 +1,6 @@
+[package]
+name = "benchmark-io-rust"
+version = "0.1.0"
+authors = ["Yuichi Tanikawa <kojole.jp@gmail.com>"]
+
+[dependencies]
