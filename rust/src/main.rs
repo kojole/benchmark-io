@@ -1,3 +1,7 @@
+extern crate benchmark_io_rust as bench;
+use bench::cli;
+
 fn main() {
-    println!("Hello, world!");
+    let config = cli::parse_args();
+    config.hello();
 }
