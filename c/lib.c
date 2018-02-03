@@ -224,6 +224,7 @@ static void teardown_dump_logs(const config_s *config, const bench_s *bench) {
       "RR",
       "RW",
   };
+  size_t sum_complete_bs = 0;
   double sum_latency = 0;
   fprintf(log_fp, "timestamp,io_type,offset,issue_bs,complete_bs\n");
   for (size_t i = 0; i < bench->logs_n; i++) {
@@ -232,8 +233,9 @@ static void teardown_dump_logs(const config_s *config, const bench_s *bench) {
             (long long)bench->logs[i].offset,
             (i < bench->logs_n - 1) ? config->bs : 0,
             bench->logs[i].complete_bs);
-    if (i > 0) {
-      sum_latency += ts2f(bench->logs[i].ts) - ts2f(bench->logs[i - 1].ts);
+    if (i < bench->logs_n - 1) {
+      sum_complete_bs += bench->logs[i].complete_bs;
+      sum_latency += ts2f(bench->logs[i + 1].ts) - ts2f(bench->logs[i].ts);
     }
   }
 
@@ -246,9 +248,9 @@ static void teardown_dump_logs(const config_s *config, const bench_s *bench) {
   const double elapsed_time =
       ts2f(bench->logs[bench->logs_n - 1].ts) - ts2f(bench->logs[0].ts);
   const double throughput_mib =
-      config->bs * config->count / (double)(1 << 20) / elapsed_time;
+      sum_complete_bs / (double)(1 << 20) / elapsed_time;
   const double iops = (double)config->count / elapsed_time;
-  const double mean_latency_ms = sum_latency / config->count * 1e-3;
+  const double mean_latency_ms = sum_latency / config->count * 1e3;
   printf(summary_message, elapsed_time, throughput_mib, iops, mean_latency_ms);
 }
 
