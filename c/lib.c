@@ -180,7 +180,7 @@ static const char *summary_message =
 "  Elapsed time  %.3f [s]\n"
 "  Throughput    %.3f [MiB/s]\n"
 "  IOPS          %.3f\n"
-"  Mean latency  %f [ms]\n"
+"  Mean latency  %.3f [ms]\n"
 "";
 /* clang-format on */
 
@@ -245,10 +245,11 @@ static void teardown_dump_logs(const config_s *config, const bench_s *bench) {
 
   const double elapsed_time =
       ts2f(bench->logs[bench->logs_n - 1].ts) - ts2f(bench->logs[0].ts);
-  const double throughput_mib = config->bs * config->count / (double)(1 << 20);
+  const double throughput_mib =
+      config->bs * config->count / (double)(1 << 20) / elapsed_time;
   const double iops = (double)config->count / elapsed_time;
-  const double mean_latency = sum_latency / config->count;
-  printf(summary_message, elapsed_time, throughput_mib, iops, mean_latency);
+  const double mean_latency_ms = sum_latency / config->count * 1e-3;
+  printf(summary_message, elapsed_time, throughput_mib, iops, mean_latency_ms);
 }
 
 static void teardown_target(int fd) {
