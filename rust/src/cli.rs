@@ -1,5 +1,6 @@
-use std::fmt;
 use docopt::Docopt;
+use std::fmt;
+use std::path::{Path, PathBuf};
 
 const USAGE: &'static str = "
 Simple file I/O benchmark.
@@ -22,9 +23,9 @@ Options:
 #[derive(Debug, Deserialize)]
 struct Args {
     arg_workdir: String,
-    flag_bs: usize,
-    flag_count: usize,
-    flag_filesize_gib: usize,
+    flag_bs: u64,
+    flag_count: u64,
+    flag_filesize_gib: u64,
     flag_rread: bool,
     flag_rwrite: bool,
     flag_sread: bool,
@@ -37,6 +38,17 @@ pub enum Io {
     RandWrite,
     SeqRead,
     SeqWrite,
+}
+
+impl Io {
+    pub fn to_abbrev(&self) -> &str {
+        match self {
+            &Io::RandRead => "RR",
+            &Io::RandWrite => "RW",
+            &Io::SeqRead => "SR",
+            &Io::SeqWrite => "SW",
+        }
+    }
 }
 
 impl fmt::Display for Io {
@@ -56,9 +68,9 @@ pub struct Config {
     pub program: &'static str,
     pub workdir: String,
     pub io_type: Io,
-    pub bs: usize,
-    pub count: usize,
-    pub filesize: usize,
+    pub bs: u64,
+    pub count: u64,
+    pub filesize: u64,
 }
 
 impl Config {
@@ -104,6 +116,10 @@ Config:
             self.count,
             self.filesize >> 30
         )
+    }
+
+    pub fn path_for(&self, filename: &str) -> PathBuf {
+        Path::new(&self.workdir).join(filename)
     }
 }
 

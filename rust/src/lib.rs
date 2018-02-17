@@ -1,24 +1,91 @@
+extern crate chrono;
 extern crate docopt;
 extern crate libc;
+extern crate rand;
 #[macro_use]
 extern crate serde_derive;
 
+use rand::Rng;
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::io::prelude::*;
 use std::os::unix::io::AsRawFd;
-use std::path::Path;
 use std::process::{Command, Output};
+use std::time::{Duration, Instant};
 
 pub mod cli;
-use cli::Config;
+use cli::{Config, Io};
 
-struct Log {}
+struct Log {
+    elapsed: Duration,
+    offset: u64,
+    complete_bs: usize,
+}
 
 pub struct Bench {
+    config: Config,
+    rng: rand::ThreadRng,
     target: File,
     buffer: Vec<u8>,
     logs: Vec<Log>,
+}
+
+impl Bench {
+    fn seek(&mut self, i: &u64) -> BenchResult<u64> {
+        let offset;
+        match self.config.io_type {
+            Io::RandRead | Io::RandWrite => {
+                offset = self.config.bs * self.rng.gen_range::<u64>(0, self.config.count);
+                self.target.seek(io::SeekFrom::Start(offset))?;
+            }
+            Io::SeqRead | Io::SeqWrite => {
+                offset = self.config.bs * i;
+            }
+        }
+        Ok(offset)
+    }
+
+    fn issue_io(&mut self) -> BenchResult<usize> {
+        let complete_bs;
+        match self.config.io_type {
+            Io::RandRead | Io::SeqRead => {
+                complete_bs = self.target.read(self.buffer.as_mut_slice())?;
+            }
+            Io::RandWrite | Io::SeqWrite => {
+                complete_bs = self.target.write(&self.buffer)?;
+                self.target.sync_data()?;
+            }
+        }
+        Ok(complete_bs)
+    }
+
+    fn dump_logs(&self, filename: &str) -> BenchResult<()> {
+        let path = self.config.path_for(filename);
+        print!("Writing log to {} ... ", path.display());
+        io::stdout().flush().unwrap();
+
+        let outfile = File::create(path)?;
+        let mut writer = io::BufWriter::new(outfile);
+
+        write!(writer, "elapsed_time,io_type,offset,issue_bs,complete_s\n")?;
+        for log in &self.logs {
+            write!(
+                writer,
+                "{}.{:09},{},{},{},{}\n",
+                log.elapsed.as_secs(),
+                log.elapsed.subsec_nanos(),
+                self.config.io_type.to_abbrev(),
+                log.offset,
+                self.config.bs,
+                log.complete_bs
+            )?;
+        }
+
+        println!("done.");
+        Ok(())
+    }
+
+    fn show_summary(&self) {}
 }
 
 #[derive(Debug)]
@@ -36,16 +103,15 @@ impl From<io::Error> for BenchError {
 
 pub type BenchResult<T> = Result<T, BenchError>;
 
-pub fn setup(config: &Config) -> BenchResult<Bench> {
+pub fn setup(config: Config) -> BenchResult<Bench> {
     print!("Preparing target file ... ");
     io::stdout().flush().unwrap();
 
-    let target_path = Path::new(&config.workdir).join("benchmark-io.bin");
     let mut target = OpenOptions::new()
         .read(true)
         .write(true)
         .create(true)
-        .open(target_path)?;
+        .open(config.path_for("benchmark-io.bin"))?;
     setup_target(&mut target, config.filesize as u64)?;
 
     println!("done.");
@@ -56,9 +122,11 @@ pub fn setup(config: &Config) -> BenchResult<Bench> {
     println!("done.");
 
     Ok(Bench {
+        rng: rand::thread_rng(),
         target,
-        buffer: Vec::with_capacity(config.bs),
-        logs: Vec::with_capacity(config.count + 1),
+        buffer: vec![0; config.bs as usize],
+        logs: Vec::with_capacity(config.count as usize),
+        config,
     })
 }
 
@@ -84,10 +152,29 @@ fn setup_clear_cache() -> BenchResult<()> {
     Ok(())
 }
 
-pub fn run(config: &Config, bench: &mut Bench) -> BenchResult<()> {
+pub fn run(bench: &mut Bench) -> BenchResult<()> {
+    print!("\nRunning benchmark ... ");
+    io::stdout().flush().unwrap();
+
+    let start = Instant::now();
+    for i in 0..bench.config.count {
+        let offset = bench.seek(&i)?;
+        let complete_bs = bench.issue_io()?;
+        bench.logs.push(Log {
+            elapsed: start.elapsed(),
+            offset,
+            complete_bs,
+        });
+    }
+
+    println!("done.");
     Ok(())
 }
 
-pub fn teardown(config: &Config, bench: &mut Bench) -> BenchResult<()> {
+pub fn teardown(bench: &mut Bench) -> BenchResult<()> {
+    let now = chrono::Local::now();
+    bench.dump_logs(&now.format("benchmark-io_%F-%H-%M-%S.log").to_string())?;
+
+    bench.show_summary();
     Ok(())
 }

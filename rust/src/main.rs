@@ -7,9 +7,9 @@ fn main() {
     let config = cli::parse_args();
     config.hello();
 
-    if let Err(err) = setup(&config).and_then(|mut bench| {
-        run(&config, &mut bench)?;
-        teardown(&config, &mut bench)
+    if let Err(err) = setup(config).and_then(|mut bench| {
+        run(&mut bench)?;
+        teardown(&mut bench)
     }) {
         eprintln!("Application error: {:?}", err);
         process::exit(1);
