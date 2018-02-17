@@ -22,9 +22,9 @@ Options:
 #[derive(Debug, Deserialize)]
 struct Args {
     arg_workdir: String,
-    flag_bs: isize,
-    flag_count: isize,
-    flag_filesize_gib: isize,
+    flag_bs: usize,
+    flag_count: usize,
+    flag_filesize_gib: usize,
     flag_rread: bool,
     flag_rwrite: bool,
     flag_sread: bool,
@@ -32,20 +32,20 @@ struct Args {
 }
 
 #[derive(Debug)]
-pub enum IO {
+pub enum Io {
     RandRead,
     RandWrite,
     SeqRead,
     SeqWrite,
 }
 
-impl fmt::Display for IO {
+impl fmt::Display for Io {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s = match self {
-            &IO::RandRead => "Random read",
-            &IO::RandWrite => "Random write",
-            &IO::SeqRead => "Sequential read",
-            &IO::SeqWrite => "Sequential write",
+            &Io::RandRead => "Random read",
+            &Io::RandWrite => "Random write",
+            &Io::SeqRead => "Sequential read",
+            &Io::SeqWrite => "Sequential write",
         };
         write!(f, "{}", s)
     }
@@ -55,10 +55,10 @@ impl fmt::Display for IO {
 pub struct Config {
     pub program: &'static str,
     pub workdir: String,
-    pub io_type: IO,
-    pub bs: isize,
-    pub count: isize,
-    pub filesize: isize,
+    pub io_type: Io,
+    pub bs: usize,
+    pub count: usize,
+    pub filesize: usize,
 }
 
 impl Config {
@@ -69,10 +69,10 @@ impl Config {
             args.flag_sread,
             args.flag_swrite,
         ) {
-            (true, _, _, _) => IO::RandRead,
-            (_, true, _, _) => IO::RandWrite,
-            (_, _, true, _) => IO::SeqRead,
-            (_, _, _, true) => IO::SeqWrite,
+            (true, _, _, _) => Io::RandRead,
+            (_, true, _, _) => Io::RandWrite,
+            (_, _, true, _) => Io::SeqRead,
+            (_, _, _, true) => Io::SeqWrite,
             (_, _, _, _) => unreachable!(),
         };
         Config {
