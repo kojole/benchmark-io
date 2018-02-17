@@ -3,7 +3,7 @@ extern crate libc;
 #[macro_use]
 extern crate serde_derive;
 
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io;
 use std::io::prelude::*;
 use std::os::unix::io::AsRawFd;
@@ -37,12 +37,17 @@ impl From<io::Error> for BenchError {
 pub type BenchResult<T> = Result<T, BenchError>;
 
 pub fn setup(config: &Config) -> BenchResult<Bench> {
-    let target_path = Path::new(&config.workdir).join("benchmark-io.bin");
-    let mut target = File::open(target_path)?;
-
     print!("Preparing target file ... ");
     io::stdout().flush().unwrap();
+
+    let target_path = Path::new(&config.workdir).join("benchmark-io.bin");
+    let mut target = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(target_path)?;
     setup_target(&mut target, config.filesize as u64)?;
+
     println!("done.");
 
     print!("Clearing page cache ... ");
