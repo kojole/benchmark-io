@@ -42,7 +42,7 @@ pub fn setup(config: &Config) -> BenchResult<Bench> {
 
     print!("Preparing target file ... ");
     io::stdout().flush().unwrap();
-    setup_target(&mut target, 0)?;
+    setup_target(&mut target, config.filesize as u64)?;
     println!("done.");
 
     print!("Clearing page cache ... ");
