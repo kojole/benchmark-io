@@ -13,6 +13,16 @@ use std::os::unix::io::AsRawFd;
 use std::process::{Command, Output};
 use std::time::{Duration, Instant};
 
+trait ToSec {
+    fn to_sec(&self) -> f64;
+}
+
+impl ToSec for Duration {
+    fn to_sec(&self) -> f64 {
+        self.as_secs() as f64 + self.subsec_nanos() as f64 / 1e9
+    }
+}
+
 pub mod cli;
 use cli::{Config, Io};
 
@@ -28,6 +38,7 @@ pub struct Bench {
     target: File,
     buffer: Vec<u8>,
     logs: Vec<Log>,
+    start: Option<Instant>,
 }
 
 impl Bench {
@@ -85,7 +96,36 @@ impl Bench {
         Ok(())
     }
 
-    fn show_summary(&self) {}
+    fn show_summary(&self) {
+        let elapsed = Instant::now().duration_since(self.start.unwrap());
+        let elapsed_s = elapsed.to_sec();
+        let total_complete_bs: usize = self.logs.iter().map(|ref log| log.complete_bs).sum();
+        let throughout_mib = total_complete_bs as f64 / (1 << 20) as f64 / elapsed_s;
+        let iops = self.config.count as f64 / elapsed_s;
+
+        let mut latencies = Vec::with_capacity(self.logs.len());
+        if let Some(log0) = self.logs.first() {
+            latencies.push(log0.elapsed.to_sec());
+        }
+        for (i, log) in self.logs.iter().enumerate() {
+            if i == 0 {
+                continue;
+            }
+            latencies.push((log.elapsed - self.logs[i - 1].elapsed).to_sec());
+        }
+        let mean_latency_ms = latencies.iter().sum::<f64>() / latencies.len() as f64 * 1e3;
+
+        println!(
+            "\
+Sumary:
+  Elapsed time  {:.3} [s]
+  Throughput    {:.3} [MiB/s]
+  IOPS          {:.3}
+  Mean latency  {:.3} [ms]
+",
+            elapsed_s, throughout_mib, iops, mean_latency_ms
+        );
+    }
 }
 
 #[derive(Debug)]
@@ -127,6 +167,7 @@ pub fn setup(config: Config) -> BenchResult<Bench> {
         buffer: vec![0; config.bs as usize],
         logs: Vec::with_capacity(config.count as usize),
         config,
+        start: None,
     })
 }
 
@@ -156,12 +197,12 @@ pub fn run(bench: &mut Bench) -> BenchResult<()> {
     print!("\nRunning benchmark ... ");
     io::stdout().flush().unwrap();
 
-    let start = Instant::now();
+    bench.start = Some(Instant::now());
     for i in 0..bench.config.count {
         let offset = bench.seek(&i)?;
         let complete_bs = bench.issue_io()?;
         bench.logs.push(Log {
-            elapsed: start.elapsed(),
+            elapsed: bench.start.unwrap().elapsed(),
             offset,
             complete_bs,
         });
