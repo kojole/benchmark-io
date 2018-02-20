@@ -227,10 +227,8 @@ static void teardown_dump_logs(const config_s *config, const bench_s *bench) {
   for (size_t i = 0; i < bench->logs_n; i++) {
     fprintf(log_fp, "%.9f,%s,%lld,%zu,%zu\n",
             ts2f(bench->logs[i].ts) - ts2f(bench->start),
-            io_types[config->io_type],
-            (long long)bench->logs[i].offset,
-            config->bs,
-            bench->logs[i].complete_bs);
+            io_types[config->io_type], (long long)bench->logs[i].offset,
+            config->bs, bench->logs[i].complete_bs);
     sum_complete_bs += bench->logs[i].complete_bs;
   }
 
