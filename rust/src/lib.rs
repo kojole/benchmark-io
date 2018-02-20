@@ -97,24 +97,15 @@ impl Bench {
     }
 
     fn show_summary(&self) {
-        let elapsed = Instant::now().duration_since(self.start.unwrap());
+        let elapsed = match self.logs.last() {
+            Some(log) => log.elapsed,
+            None => return,
+        };
         let elapsed_s = elapsed.to_sec();
         let total_complete_bs: usize = self.logs.iter().map(|ref log| log.complete_bs).sum();
         let throughout_mib = total_complete_bs as f64 / (1 << 20) as f64 / elapsed_s;
         let iops = self.config.count as f64 / elapsed_s;
-
-        let mut latencies = Vec::with_capacity(self.logs.len());
-        if let Some(log0) = self.logs.first() {
-            latencies.push(log0.elapsed.to_sec());
-        }
-        for (i, log) in self.logs.iter().enumerate() {
-            if i == 0 {
-                continue;
-            }
-            latencies.push((log.elapsed - self.logs[i - 1].elapsed).to_sec());
-        }
-        let mean_latency_ms = latencies.iter().sum::<f64>() / latencies.len() as f64 * 1e3;
-
+        let mean_latency_ms = elapsed_s as f64 / self.config.count as f64 * 1e3;
         println!(
             "\
 Sumary:
