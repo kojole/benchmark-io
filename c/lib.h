@@ -21,6 +21,7 @@ typedef struct bench_s {
   DIR *workdir_p;
   int target_fd;
   char *buffer;
+  struct timespec start;
   size_t logs_n;
   io_log_s *logs;
 } bench_s;

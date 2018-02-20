@@ -56,8 +56,8 @@ bench_s setup(const config_s *config) {
       .workdir_p = workdir_p,
       .target_fd = target_fd,
       .buffer = malloc(sizeof(char) * config->bs),
-      .logs_n = config->count + 1,
-      .logs = malloc(sizeof(io_log_s) * (config->count + 1)),
+      .logs_n = config->count,
+      .logs = malloc(sizeof(io_log_s) * config->count),
   };
   if (bench.buffer == NULL || bench.logs == NULL) {
     Error("setup: malloc(2) failed: %s\n", strerror(errno));
@@ -122,10 +122,10 @@ void run(const config_s *config, const bench_s *bench) {
   printf("\nRunning benchmark ... ");
   fflush(stdout);
 
+  if (clock_gettime(CLOCK_MONOTONIC, (struct timespec *)&bench->start) == -1) {
+    Error("run: clock_gettime(3) failed: %s\n", strerror(errno));
+  }
   for (size_t i = 0; i < config->count; i++) {
-    if (clock_gettime(CLOCK_REALTIME, &bench->logs[i].ts) == -1) {
-      Error("run: clock_gettime(3) failed: %s\n", strerror(errno));
-    }
     if (config->io_type & 0b10) {
       // random
       bench->logs[i].offset = random_offset(config->bs, config->count);
@@ -152,12 +152,10 @@ void run(const config_s *config, const bench_s *bench) {
         Error("run: read(2) failed: %s\n", strerror(errno));
       }
     }
+    if (clock_gettime(CLOCK_MONOTONIC, &bench->logs[i].ts) == -1) {
+      Error("run: clock_gettime(3) failed: %s\n", strerror(errno));
+    }
   }
-  if (clock_gettime(CLOCK_REALTIME, &bench->logs[config->count].ts) == -1) {
-    Error("run: clock_gettime(3) failed: %s\n", strerror(errno));
-  }
-  bench->logs[config->count].offset = config->bs * config->count;
-  bench->logs[config->count].complete_bs = 0;
 
   printf("done.\n");
 }
@@ -225,18 +223,15 @@ static void teardown_dump_logs(const config_s *config, const bench_s *bench) {
       "RW",
   };
   size_t sum_complete_bs = 0;
-  double sum_latency = 0;
-  fprintf(log_fp, "timestamp,io_type,offset,issue_bs,complete_bs\n");
+  fprintf(log_fp, "elapsed_time,io_type,offset,issue_bs,complete_bs\n");
   for (size_t i = 0; i < bench->logs_n; i++) {
-    fprintf(log_fp, "%ld.%09ld,%s,%lld,%zu,%zu\n", bench->logs[i].ts.tv_sec,
-            bench->logs[i].ts.tv_nsec, io_types[config->io_type],
+    fprintf(log_fp, "%.9f,%s,%lld,%zu,%zu\n",
+            ts2f(bench->logs[i].ts) - ts2f(bench->start),
+            io_types[config->io_type],
             (long long)bench->logs[i].offset,
-            (i < bench->logs_n - 1) ? config->bs : 0,
+            config->bs,
             bench->logs[i].complete_bs);
-    if (i < bench->logs_n - 1) {
-      sum_complete_bs += bench->logs[i].complete_bs;
-      sum_latency += ts2f(bench->logs[i + 1].ts) - ts2f(bench->logs[i].ts);
-    }
+    sum_complete_bs += bench->logs[i].complete_bs;
   }
 
   if (fclose(log_fp) == EOF) {
@@ -246,11 +241,11 @@ static void teardown_dump_logs(const config_s *config, const bench_s *bench) {
   printf("done.\n\n");
 
   const double elapsed_time =
-      ts2f(bench->logs[bench->logs_n - 1].ts) - ts2f(bench->logs[0].ts);
+      ts2f(bench->logs[bench->logs_n - 1].ts) - ts2f(bench->start);
   const double throughput_mib =
       sum_complete_bs / (double)(1 << 20) / elapsed_time;
   const double iops = (double)config->count / elapsed_time;
-  const double mean_latency_ms = sum_latency / config->count * 1e3;
+  const double mean_latency_ms = elapsed_time / config->count * 1e3;
   printf(summary_message, elapsed_time, throughput_mib, iops, mean_latency_ms);
 }
 
