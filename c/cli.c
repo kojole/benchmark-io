@@ -136,7 +136,7 @@ void cli_hello(const config_s *config) {
       "Random read",
       "Random write",
   };
-  const char *io_type = io_types[config->io_type - RAND_READ];
+  const char *io_type = io_types[config->io_type - SEQ_READ];
   printf(hello_message, config->program, config->workdir, io_type, config->bs,
          config->count, config->filesize >> 30);
 }

@@ -16,7 +16,7 @@ sources := $(wildcard *.c)
 objects := $(sources:.c=.o)
 
 $(program): $(objects)
-	$(CC) $(LDFLAGS) $? $(LDLIBS) $(OUTPUT_OPTION)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) $(OUTPUT_OPTION)
 
 # Targets
 .DEFAULT_GOAL := all
