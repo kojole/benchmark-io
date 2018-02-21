@@ -18,7 +18,8 @@ static void setup_clear_cache(void);
 
 static inline off_t random_offset(size_t bs, size_t count);
 
-static void teardown_dump_logs(const config_s *config, const bench_s *bench);
+static void teardown_write_logs(const config_s *config, const bench_s *bench);
+static void teardown_show_summary(const config_s *config, const bench_s *bench);
 static void teardown_target(int fd);
 static void teardown_workdir(DIR *dir_p);
 
@@ -47,10 +48,14 @@ bench_s setup(const config_s *config) {
   int target_fd = setup_target(workdir_p, config->filesize);
   printf("done.\n");
 
-  printf("Clearing page cache ... ");
-  fflush(stdout);
-  setup_clear_cache();
-  printf("done.\n");
+  if (config->clear_cache) {
+    printf("Clearing page cache ... ");
+    fflush(stdout);
+    setup_clear_cache();
+    printf("done.\n");
+  } else {
+    printf("Skip clearing page cache.\n");
+  }
 
   bench_s bench = {
       .workdir_p = workdir_p,
@@ -165,24 +170,20 @@ static inline off_t random_offset(size_t bs, size_t count) {
 }
 
 void teardown(const config_s *config, const bench_s *bench) {
-  teardown_dump_logs(config, bench);
+  teardown_write_logs(config, bench);
+  teardown_show_summary(config, bench);
   free(bench->logs);
 
   teardown_target(bench->target_fd);
   teardown_workdir(bench->workdir_p);
 }
 
-/* clang-format off */
-static const char *summary_message =
-"Summary:\n"
-"  Elapsed time  %.3f [s]\n"
-"  Throughput    %.3f [MiB/s]\n"
-"  IOPS          %.3f\n"
-"  Mean latency  %.3f [ms]\n"
-"";
-/* clang-format on */
+static void teardown_write_logs(const config_s *config, const bench_s *bench) {
+  if (!config->write_log) {
+    printf("Skip writing log.\n");
+    return;
+  }
 
-static void teardown_dump_logs(const config_s *config, const bench_s *bench) {
   int dir_fd = dirfd(bench->workdir_p);
   if (dir_fd == -1) {
     Error("teardown: dirfd(3) failed: %s\n", strerror(errno));
@@ -222,26 +223,48 @@ static void teardown_dump_logs(const config_s *config, const bench_s *bench) {
       "RR",
       "RW",
   };
-  size_t sum_complete_bs = 0;
   fprintf(log_fp, "elapsed_time,io_type,offset,issue_bs,complete_bs\n");
   for (size_t i = 0; i < bench->logs_n; i++) {
     fprintf(log_fp, "%.9f,%s,%lld,%zu,%zu\n",
             ts2f(bench->logs[i].ts) - ts2f(bench->start),
             io_types[config->io_type], (long long)bench->logs[i].offset,
             config->bs, bench->logs[i].complete_bs);
-    sum_complete_bs += bench->logs[i].complete_bs;
   }
 
   if (fclose(log_fp) == EOF) {
     Error("teardown: fclose(3) failed: %s\n", strerror(errno));
   }
 
-  printf("done.\n\n");
+  printf("done.\n");
+}
+
+/* clang-format off */
+static const char *summary_message =
+"\n"
+"Summary:\n"
+"  Elapsed time  %.3f [s]\n"
+"  Throughput    %.3f [MiB/s]\n"
+"  IOPS          %.3f\n"
+"  Mean latency  %.3f [ms]\n"
+"\n";
+/* clang-format on */
+
+static void teardown_show_summary(const config_s *config,
+                                  const bench_s *bench) {
+  int dir_fd = dirfd(bench->workdir_p);
+  if (dir_fd == -1) {
+    Error("teardown: dirfd(3) failed: %s\n", strerror(errno));
+  }
+
+  size_t total_complete_bs = 0;
+  for (size_t i = 0; i < bench->logs_n; i++) {
+    total_complete_bs += bench->logs[i].complete_bs;
+  }
 
   const double elapsed_time =
       ts2f(bench->logs[bench->logs_n - 1].ts) - ts2f(bench->start);
   const double throughput_mib =
-      sum_complete_bs / (double)(1 << 20) / elapsed_time;
+      total_complete_bs / (double)(1 << 20) / elapsed_time;
   const double iops = (double)config->count / elapsed_time;
   const double mean_latency_ms = elapsed_time / config->count * 1e3;
   printf(summary_message, elapsed_time, throughput_mib, iops, mean_latency_ms);

@@ -70,7 +70,12 @@ impl Bench {
         Ok(complete_bs)
     }
 
-    fn dump_logs(&self, filename: &str) -> BenchResult<()> {
+    fn write_logs(&self, filename: &str) -> BenchResult<()> {
+        if !self.config.write_log {
+            println!("Skip clearing page cache.");
+            return Ok(());
+        }
+
         let path = self.config.path_for(filename);
         print!("Writing log to {} ... ", path.display());
         io::stdout().flush().unwrap();
@@ -107,7 +112,7 @@ impl Bench {
         let iops = self.config.count as f64 / elapsed_s;
         let mean_latency_ms = elapsed_s as f64 / self.config.count as f64 * 1e3;
         println!(
-            "\
+            "
 Sumary:
   Elapsed time  {:.3} [s]
   Throughput    {:.3} [MiB/s]
@@ -147,10 +152,14 @@ pub fn setup(config: Config) -> BenchResult<Bench> {
 
     println!("done.");
 
-    print!("Clearing page cache ... ");
-    io::stdout().flush().unwrap();
-    setup_clear_cache()?;
-    println!("done.");
+    if config.clear_cache {
+        print!("Clearing page cache ... ");
+        io::stdout().flush().unwrap();
+        setup_clear_cache()?;
+        println!("done.");
+    } else {
+        println!("Skip clearing page cache.");
+    }
 
     Ok(Bench {
         rng: rand::thread_rng(),
@@ -205,7 +214,7 @@ pub fn run(bench: &mut Bench) -> BenchResult<()> {
 
 pub fn teardown(bench: &mut Bench) -> BenchResult<()> {
     let now = chrono::Local::now();
-    bench.dump_logs(&now.format("benchmark-io_%F-%H-%M-%S.log").to_string())?;
+    bench.write_logs(&now.format("benchmark-io_%F-%H-%M-%S.log").to_string())?;
 
     bench.show_summary();
     Ok(())

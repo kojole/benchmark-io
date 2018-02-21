@@ -18,6 +18,8 @@ Options:
   --rwrite              Issue random writes.
   --sread               Issue sequential reads.
   --swrite              Issue sequential writes.
+  --no-clear-cache      Skip clearing page cache in setup.
+  --no-write-log        Skip writing I/O log.
 ";
 
 #[derive(Debug, Deserialize)]
@@ -30,6 +32,8 @@ struct Args {
     flag_rwrite: bool,
     flag_sread: bool,
     flag_swrite: bool,
+    flag_no_clear_cache: bool,
+    flag_no_write_log: bool,
 }
 
 #[derive(Debug)]
@@ -71,6 +75,8 @@ pub struct Config {
     pub bs: u64,
     pub count: u64,
     pub filesize: u64,
+    pub clear_cache: bool,
+    pub write_log: bool,
 }
 
 impl Config {
@@ -94,6 +100,8 @@ impl Config {
             bs: args.flag_bs,
             count: args.flag_count,
             filesize: args.flag_filesize_gib * (1 << 30),
+            clear_cache: !args.flag_no_clear_cache,
+            write_log: !args.flag_no_write_log,
         }
     }
 

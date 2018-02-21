@@ -36,6 +36,8 @@ static const char *help_message =
 "  --rwrite              Issue random writes.\n"
 "  --sread               Issue sequential reads.\n"
 "  --swrite              Issue sequential writes.\n"
+"  --no-clear-cache      Skip clearing page cache in setup.\n"
+"  --no-write-log        Skip writing I/O log.\n"
 "";
 /* clang-format on */
 
@@ -47,6 +49,8 @@ config_s cli_parse(int argc, char *argv[]) {
       .bs = default_bs,
       .count = default_count,
       .filesize = default_filesize,
+      .clear_cache = true,
+      .write_log = true,
   };
 
   const struct option longopts[] = {
@@ -58,6 +62,8 @@ config_s cli_parse(int argc, char *argv[]) {
       {"rwrite", no_argument, (int *)&config.io_type, RAND_WRITE},
       {"sread", no_argument, (int *)&config.io_type, SEQ_READ},
       {"swrite", no_argument, (int *)&config.io_type, SEQ_WRITE},
+      {"no-clear-cache", no_argument, (int *)&config.clear_cache, false},
+      {"no-write-log", no_argument, (int *)&config.write_log, false},
       {NULL, 0, NULL, 0},
   };
 

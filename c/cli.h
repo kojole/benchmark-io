@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
 
 typedef enum io_type_e {
@@ -17,6 +18,8 @@ typedef struct config_s {
   size_t bs;
   size_t count;
   size_t filesize;
+  bool clear_cache;
+  bool write_log;
 } config_s;
 
 config_s cli_parse(int argc, char *argv[]);
