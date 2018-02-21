@@ -18,21 +18,22 @@ EOF
 }
 
 main() {
-  local workdir="${@:$#}"
-  local sar_out="$workdir/benchmark-io_sar_$(date +%Y-%m-%d-%H-%M-%S).out"
-
-  echo "$program: Output sar report in binary form to $sar_out"
+  local sar_temp_out=$(mktemp)
   echo "$program: Run benchmark-io"
   echo ""
 
   numactl -C 0 -- $@ &
   local bench_pid=$!
 
-  sar -u -P 0 -o "$sar_out" 1 > /dev/null &
+  sar -u -P 0 -o "$sar_temp_out" 1 > /dev/null &
   local sar_pid=$!
 
   wait $bench_pid
   kill -INT $sar_pid
+
+  local sar_out="${@:$#}/benchmark-io_sar_$(date +%Y-%m-%d-%H-%M-%S).out"
+  echo "$program: Output sar report in binary form to $sar_out"
+  mv "$sar_temp_out" "$sar_out"
 }
 
 
