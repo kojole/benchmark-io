@@ -28,8 +28,8 @@ main() {
   numactl -C 0 -- $@ &
   local bench_pid=$!
 
-  sar -u -P 0 -o "$sar_out" > /dev/null &
-  local sar_pid $!
+  sar -u -P 0 -o "$sar_out" 1 > /dev/null &
+  local sar_pid=$!
 
   wait $bench_pid
   kill -INT $sar_pid
