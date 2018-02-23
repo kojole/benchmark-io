@@ -1,5 +1,7 @@
 # benchmark-io
 
+[![Build Status](https://travis-ci.org/kojole/benchmark-io.svg?branch=master)](https://travis-ci.org/kojole/benchmark-io)
+
 > Simple file I/O benchmark in C and Rust
 
 ## Usage
@@ -9,7 +11,7 @@ $ ./c/benchmark-io-c -h
 Simple file I/O benchmark.
 
 Usage:
-  benchmark-io-c [options] (--rread | --rwrite | --sread | --swrite) <workdir>
+  benchmark-io-c [options] (--rread | --rwrite | --sread | --swrite) WORKDIR
 
 Options:
   -h --help             Show this screen.
@@ -30,6 +32,23 @@ Options:
 2. Clear page cache.
 3. Issue `BYTES`-byte reads/writes to the file `N` times.
 4. Write I/O log to `benchmark-io_yyyy-MM-dd-HH-mm-ss.log`.
+
+### Compile options
+
+#### `USE_FSYNC` (C)
+
+Call `fsync(2)` instead of `fdatasync(2)` after each `write(2)` calls.
+
+Usage: `$ make CFLAGS=DUSE_FSYNC`
+
+#### `NO_EACH_ELAPSED_LOG` (C), `no_each_elapsed_log` (Rust)
+
+Disable logging elapsed time of each I/Os.
+
+Usage:
+
+- C: `$ make CFLAGS=DNO_EACH_ELAPSED_LOG`
+- Rust: `$ cargo build --features no_each_elapsed_log`
 
 ## Example
 
@@ -69,12 +88,12 @@ $ ./helper.sh -h
 Run benchmark-io while mesuring system performance with sysstat.
 
 Usage:
-  ./helper.sh <bin> <arg>...
+  ./helper.sh BIN ARG...
   ./helper.sh -h | --help
 
 Arguments:
-  bin  path to benchmark-io binary
-  arg  arguments passed to benchmark-io
+  BIN  path to benchmark-io binary
+  ARG  arguments passed to benchmark-io
   
 
 $ ./helper.sh ./c/benchmark-io-c -c 10000 --rwrite /mnt/d/workdir
