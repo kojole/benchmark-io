@@ -25,7 +25,7 @@ static const char *help_message =
 "Simple file I/O benchmark.\n"
 "\n"
 "Usage:\n"
-"  %s [options] (--rread | --rwrite | --sread | --swrite) <workdir>\n"
+"  %s [options] (--rread | --rwrite | --sread | --swrite) WORKDIR\n"
 "\n"
 "Options:\n"
 "  -h --help             Show this screen.\n"
@@ -112,7 +112,7 @@ config_s cli_parse(int argc, char *argv[]) {
   argv += optind;
 
   if (argc < 1) {
-    fprintf(stderr, "%s: argument `<workdir>` must be specified\n",
+    fprintf(stderr, "%s: argument `WORKDIR` must be specified\n",
             config.program);
     exit(EXIT_FAILURE);
   }

@@ -6,7 +6,7 @@ const USAGE: &'static str = "
 Simple file I/O benchmark.
 
 Usage:
-  benchmark-io-rust [options] (--rread | --rwrite | --sread | --swrite) <workdir>
+  benchmark-io-rust [options] (--rread | --rwrite | --sread | --swrite) WORKDIR
   benchmark-io-rust (-h | --help)
 
 Options:
@@ -22,9 +22,10 @@ Options:
   --no-write-log        Skip writing I/O log.
 ";
 
+#[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
 struct Args {
-    arg_workdir: String,
+    arg_WORKDIR: String,
     flag_bs: u64,
     flag_count: u64,
     flag_filesize_gib: u64,
@@ -95,7 +96,7 @@ impl Config {
         };
         Config {
             program: "benchmark-io-rust",
-            workdir: args.arg_workdir,
+            workdir: args.arg_WORKDIR,
             io_type,
             bs: args.flag_bs,
             count: args.flag_count,

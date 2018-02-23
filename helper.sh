@@ -7,12 +7,12 @@ usage() {
 Run benchmark-io while mesuring system performance with sysstat.
 
 Usage:
-  $program <bin> <arg>...
+  $program BIN ARG...
   $program -h | --help
 
 Arguments:
-  bin  path to benchmark-io binary
-  arg  arguments passed to benchmark-io
+  BIN  path to benchmark-io binary
+  ARG  arguments passed to benchmark-io
 
 EOF
 }
@@ -32,7 +32,7 @@ main() {
   kill -INT $sar_pid
 
   local sar_out="${@:$#}/benchmark-io_sar_$(date +%Y-%m-%d-%H-%M-%S).out"
-  echo "$program: Output sar report in binary form to $sar_out"
+  echo "$program: Write sar report in binary form to $sar_out"
   mv "$sar_temp_out" "$sar_out"
 }
 
