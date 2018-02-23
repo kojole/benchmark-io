@@ -10,8 +10,6 @@ matrix:
     - make clean
     - make CFLAGS=-DNO_EACH_ELAPSED_lOG
   - language: rust
-    rust:
-    - stable
     before_script:
     - cd rust
     script:
