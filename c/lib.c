@@ -133,7 +133,8 @@ void run(const config_s *config, const bench_s *bench) {
   for (size_t i = 0; i < config->count; i++) {
     if (config->io_type & 0b10) {
       // random
-      bench->logs[i].offset = random_offset(config->bs, config->count);
+      bench->logs[i].offset =
+          random_offset(config->bs, config->filesize / config->bs);
       if (lseek(bench->target_fd, bench->logs[i].offset, SEEK_SET) == -1) {
         Error("run: lseek(2) faield: %s\n", strerror(errno));
       }
@@ -170,8 +171,8 @@ void run(const config_s *config, const bench_s *bench) {
   printf("done.\n");
 }
 
-static inline off_t random_offset(size_t bs, size_t count) {
-  return bs * (random() / (RAND_MAX / count + 1));
+static inline off_t random_offset(size_t bs, size_t n_blocks) {
+  return bs * (random() / (RAND_MAX / n_blocks + 1));
 }
 
 void teardown(const config_s *config, const bench_s *bench) {

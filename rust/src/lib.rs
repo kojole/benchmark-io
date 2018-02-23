@@ -54,7 +54,9 @@ impl Bench {
         let offset;
         match self.config.io_type {
             Io::RandRead | Io::RandWrite => {
-                offset = self.config.bs * self.rng.gen_range::<u64>(0, self.config.count);
+                offset = self.config.bs
+                    * self.rng
+                        .gen_range::<u64>(0, self.config.filesize / self.config.bs);
                 self.target.seek(io::SeekFrom::Start(offset))?;
             }
             Io::SeqRead | Io::SeqWrite => {
