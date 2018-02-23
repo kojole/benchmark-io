@@ -49,8 +49,8 @@ config_s cli_parse(int argc, char *argv[]) {
       .bs = default_bs,
       .count = default_count,
       .filesize = default_filesize,
-      .clear_cache = true,
-      .write_log = true,
+      .clear_cache = 1,
+      .write_log = 1,
   };
 
   const struct option longopts[] = {
@@ -62,8 +62,8 @@ config_s cli_parse(int argc, char *argv[]) {
       {"rwrite", no_argument, (int *)&config.io_type, RAND_WRITE},
       {"sread", no_argument, (int *)&config.io_type, SEQ_READ},
       {"swrite", no_argument, (int *)&config.io_type, SEQ_WRITE},
-      {"no-clear-cache", no_argument, (int *)&config.clear_cache, false},
-      {"no-write-log", no_argument, (int *)&config.write_log, false},
+      {"no-clear-cache", no_argument, (int *)&config.clear_cache, 0},
+      {"no-write-log", no_argument, (int *)&config.write_log, 0},
       {NULL, 0, NULL, 0},
   };
 
