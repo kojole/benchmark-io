@@ -1,0 +1,22 @@
+matrix:
+  include:
+  - language: c
+    compiler:
+    - gcc
+    before_script:
+    - cd c
+    script:
+    - make
+    - make clean
+    - make CFLAGS=-DNO_EACH_ELAPSED_lOG
+  - language: rust
+    rust:
+    - stable
+    before_script:
+    - cd rust
+    script:
+    - cargo build
+    - cargo build --feature no_each_elapsed_log
+notifications:
+  slack:
+    secure: WNjSdIpR+BZ8Q+OU6hjRdiG3MhCH0gO1HAlW3oHY3Wr6xv2LI4iQ5lqse8iYF/8OzOI1W1v6gDJbm7/7FeGPbnomBoRjceRowD2cyxMhbMnVuqO27Sn0EcVAOPsTSs9ndAyPqjnC4H1MqNqziD3pPnV3IBINKTd0xW7nE00lY7HV0GMVksXeMG+hhKEtns11strFjmNGTuLzWE4c2ZSMq7wZKzxqgH/O3jDxdJbyQm3/5qJx5yb4Qph5IQcvkcdcM2/cVOCNjW8FrjdE9tMKc505TFhDbGzPGFzN++7ePfh6lbciRPCasYMIJwAGWsA0iXWnDIfMxrjGjzEXhL3JIS3nX/w/8l4ShdSQJwqZYVhiPGxUSWyeS/7aBmi+nbEYw1kGWbOGaN0uf8r6IdndCw2JX4dmv3L5VFTljNkFPahdLLVJZmv9pywv6Mxm7uEQRWkyGBI/rTrSHAdOpXhchC1345OaP9QKpzATtHH2ti9LAS6PsDdMbNC4IN4QHF4ol23cPvesrtNGIXFtUjq76kGVp6Hr7bratroBSTD9EIpKHPtytDia8Ov7AoVjx+sTYq0w/NAVPiDHlzAXk5eT5+BZjxej+rC0LFXlp+cf5ZE1aK1X6lVY+H9K7SuBk7l+4qC3JGvREkkx50bqkUfQnonHZTV+EE7vMNuhpNcXmsI=
