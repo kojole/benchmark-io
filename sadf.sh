@@ -21,7 +21,7 @@ main() {
   local sadf_out="${sar_out%.*}.tsv"
   sadf_out=${sadf_out/sar/sadf}
   echo "$program: Write sadf output to $sadf_out"
-  echo "host\tinterval\ttimestamp\tdevice\tfield\tvalue" > "$sadf_out"
+  echo -e "host\tinterval\ttimestamp\tdevice\tfield\tvalue" > "$sadf_out"
   sadf -p -P 0 -U "$sar_out" >> "$sadf_out"
 }
 
