@@ -26,8 +26,15 @@ impl ToSec for Duration {
 pub mod cli;
 use cli::{Config, Io};
 
+#[cfg(not(feature = "no_each_elapsed_log"))]
 struct Log {
     elapsed: Duration,
+    offset: u64,
+    complete_bs: usize,
+}
+
+#[cfg(feature = "no_each_elapsed_log")]
+struct Log {
     offset: u64,
     complete_bs: usize,
 }
@@ -39,6 +46,7 @@ pub struct Bench {
     buffer: Vec<u8>,
     logs: Vec<Log>,
     start: Option<Instant>,
+    finish: Option<Duration>,
 }
 
 impl Bench {
@@ -72,7 +80,7 @@ impl Bench {
 
     fn write_logs(&self, filename: &str) -> BenchResult<()> {
         if !self.config.write_log {
-            println!("Skip clearing page cache.");
+            println!("Skip writing log.");
             return Ok(());
         }
 
@@ -85,11 +93,22 @@ impl Bench {
 
         write!(writer, "elapsed_time,io_type,offset,issue_bs,complete_s\n")?;
         for log in &self.logs {
+            #[cfg(not(feature = "no_each_elapsed_log"))]
             write!(
                 writer,
                 "{}.{:09},{},{},{},{}\n",
                 log.elapsed.as_secs(),
                 log.elapsed.subsec_nanos(),
+                self.config.io_type.to_abbrev(),
+                log.offset,
+                self.config.bs,
+                log.complete_bs
+            )?;
+
+            #[cfg(feature = "no_each_elapsed_log")]
+            write!(
+                writer,
+                "-1,{},{},{},{}\n",
                 self.config.io_type.to_abbrev(),
                 log.offset,
                 self.config.bs,
@@ -102,10 +121,15 @@ impl Bench {
     }
 
     fn show_summary(&self) {
+        #[cfg(not(feature = "no_each_elapsed_log"))]
         let elapsed = match self.logs.last() {
             Some(log) => log.elapsed,
             None => return,
         };
+
+        #[cfg(feature = "no_each_elapsed_log")]
+        let elapsed = self.finish.unwrap();
+
         let elapsed_s = elapsed.to_sec();
         let total_complete_bs: usize = self.logs.iter().map(|ref log| log.complete_bs).sum();
         let throughout_mib = total_complete_bs as f64 / (1 << 20) as f64 / elapsed_s;
@@ -168,6 +192,7 @@ pub fn setup(config: Config) -> BenchResult<Bench> {
         logs: Vec::with_capacity(config.count as usize),
         config,
         start: None,
+        finish: None,
     })
 }
 
@@ -201,12 +226,21 @@ pub fn run(bench: &mut Bench) -> BenchResult<()> {
     for i in 0..bench.config.count {
         let offset = bench.seek(&i)?;
         let complete_bs = bench.issue_io()?;
+
+        #[cfg(not(feature = "no_each_elapsed_log"))]
         bench.logs.push(Log {
             elapsed: bench.start.unwrap().elapsed(),
             offset,
             complete_bs,
         });
+
+        #[cfg(feature = "no_each_elapsed_log")]
+        bench.logs.push(Log {
+            offset,
+            complete_bs,
+        });
     }
+    bench.finish = Some(bench.start.unwrap().elapsed());
 
     println!("done.");
     Ok(())
