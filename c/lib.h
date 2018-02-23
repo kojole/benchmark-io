@@ -22,6 +22,7 @@ typedef struct bench_s {
   int target_fd;
   char *buffer;
   struct timespec start;
+  struct timespec finish;
   size_t logs_n;
   io_log_s *logs;
 } bench_s;

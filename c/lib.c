@@ -7,7 +7,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#if USE_FSYNC
+#ifdef USE_FSYNC
 #define fdatasync fsync
 #endif
 
@@ -157,9 +157,14 @@ void run(const config_s *config, const bench_s *bench) {
         Error("run: read(2) failed: %s\n", strerror(errno));
       }
     }
+#ifndef NO_EACH_ELAPSED_lOG
     if (clock_gettime(CLOCK_MONOTONIC, &bench->logs[i].ts) == -1) {
       Error("run: clock_gettime(3) failed: %s\n", strerror(errno));
     }
+#endif
+  }
+  if (clock_gettime(CLOCK_MONOTONIC, (struct timespec *)&bench->finish) == -1) {
+    Error("run: clock_gettime(3) failed: %s\n", strerror(errno));
   }
 
   printf("done.\n");
@@ -225,10 +230,16 @@ static void teardown_write_logs(const config_s *config, const bench_s *bench) {
   };
   fprintf(log_fp, "elapsed_time,io_type,offset,issue_bs,complete_bs\n");
   for (size_t i = 0; i < bench->logs_n; i++) {
-    fprintf(log_fp, "%.9f,%s,%lld,%zu,%zu\n",
-            ts2f(bench->logs[i].ts) - ts2f(bench->start),
-            io_types[config->io_type], (long long)bench->logs[i].offset,
-            config->bs, bench->logs[i].complete_bs);
+#ifndef NO_EACH_ELAPSED_lOG
+    const char *line = "%.9f,%s,%lld,%zu,%zu\n";
+    double elapsed = ts2f(bench->logs[i].ts) - ts2f(bench->start);
+#else
+    const char *line = "%d,%s,%lld,%zu,%zu\n";
+    int elapsed = -1;
+#endif
+    fprintf(log_fp, line, elapsed, io_types[config->io_type],
+            (long long)bench->logs[i].offset, config->bs,
+            bench->logs[i].complete_bs);
   }
 
   if (fclose(log_fp) == EOF) {
@@ -262,7 +273,11 @@ static void teardown_show_summary(const config_s *config,
   }
 
   const double elapsed_time =
+#ifndef NO_EACH_ELAPSED_lOG
       ts2f(bench->logs[bench->logs_n - 1].ts) - ts2f(bench->start);
+#else
+      ts2f(bench->finish) - ts2f(bench->start);
+#endif
   const double throughput_mib =
       total_complete_bs / (double)(1 << 20) / elapsed_time;
   const double iops = (double)config->count / elapsed_time;

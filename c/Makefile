@@ -1,12 +1,12 @@
 # Environment
 CC := gcc
-CFLAGS := -Wall -O2 -std=c99
+override CFLAGS += -Wall -O2 -std=c99
 LDLIBS := -lm
 
 ifeq ($(shell uname -s),Darwin)
-	CFLAGS += -DUSE_FSYNC
+	override CFLAGS += -DUSE_FSYNC
 else
-	CFLAGS += -pthread
+	override CFLAGS += -pthread
 	LDLIBS += -lrt -pthread
 endif
 
